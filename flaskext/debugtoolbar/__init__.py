@@ -43,9 +43,12 @@ class DebugToolbarExtension(object):
                 "The Flask-DebugToolbar requires the 'SECRET_KEY' config "
                 "var to be set")
 
+        app.register_blueprint(module, url_prefix='/_debug_toolbar/views')
+        app.add_url_rule('/_debug_toolbar/static/<path:filename>',
+            '_debug_toolbar.static', self.send_static_file)
 
-        self.app.before_request(self.process_request)
-        self.app.after_request(self.process_response)
+        app.before_request(self.process_request)
+        app.after_request(self.process_response)
 
         # Monkey-patch the Flask.dispatch_request method
         app.dispatch_request = self.dispatch_request
@@ -58,10 +61,6 @@ class DebugToolbarExtension(object):
             loader=PackageLoader(__name__, 'templates'))
         self.jinja_env.filters['urlencode'] = url_quote_plus
 
-        app.add_url_rule('/_debug_toolbar/static/<path:filename>',
-            '_debug_toolbar.static', self.send_static_file)
-
-
     def dispatch_request(self):
         """Does the request dispatching.  Matches the URL and returns the
         return value of the view or error handler.  This does not have to
@@ -72,9 +71,6 @@ class DebugToolbarExtension(object):
         """
         req = _request_ctx_stack.top.request
         app = current_app
-
-        if 'debugtoolbar' not in app.blueprints:
-            app.register_blueprint(module, url_prefix='/_debug_toolbar/views')
 
         try:
             if req.routing_exception is not None:
